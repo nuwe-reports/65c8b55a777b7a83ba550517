@@ -11,4 +11,5 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     List<Appointment> findAll();
     Appointment save(Appointment appointment);
     void delete(Appointment appointment);
+
 }

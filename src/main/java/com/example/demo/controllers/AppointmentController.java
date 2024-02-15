@@ -3,7 +3,10 @@ package com.example.demo.controllers;
 import com.example.demo.repositories.*;
 import com.example.demo.entities.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,14 +54,38 @@ public class AppointmentController {
     }
 
     @PostMapping("/appointment")
-    public ResponseEntity<List<Appointment>> createAppointment(@RequestBody Appointment appointment){
-        /** TODO 
-         * Implement this function, which acts as the POST /api/appointment endpoint.
-         * Make sure to check out the whole project. Specially the Appointment.java class
-         */
-        return new ResponseEntity<>(HttpStatus.I_AM_A_TEAPOT);
-    }
+    public ResponseEntity<List<Appointment>> createAppointment(@RequestBody Appointment appointment) {
+        Doctor doc = appointment.getDoctor();
+        Patient pat = appointment.getPatient();
+        Room room = appointment.getRoom();
+        
+        LocalDateTime startsAt = appointment.getStartsAt();
+        LocalDateTime finishesAt = appointment.getFinishesAt();
+    
+        if (appointment == null || appointment.getDoctor() == null || 
+            appointment.getPatient() == null || appointment.getRoom() == null || 
+            appointment.getStartsAt() == null || appointment.getFinishesAt() == null
+        ) {
+            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        
+        if (startsAt.compareTo(finishesAt) >= 0) {
+            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
+        }
 
+        List<Appointment> allAppointments = appointmentRepository.findAll();
+        for (Appointment existingAppointment : allAppointments) {
+            if( existingAppointment.overlaps(appointment))
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
+    
+        Appointment tmp = new Appointment(pat, doc, room, startsAt, finishesAt);
+        
+        appointmentRepository.save(tmp);
+        List<Appointment> appointments = Collections.singletonList(tmp);
+
+        return new ResponseEntity<>(appointments, HttpStatus.CREATED);
+    }
 
     @DeleteMapping("/appointments/{id}")
     public ResponseEntity<HttpStatus> deleteAppointment(@PathVariable("id") long id){

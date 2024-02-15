@@ -17,7 +17,7 @@ public class Patient extends Person{
     }
 
     public Patient(String firstName, String lastName, int age, String email){
-        super(firstName, lastName, age, email);
+        super(firstName, lastName, Math.max(age, 0), email);
     }
 
     public long getId(){
