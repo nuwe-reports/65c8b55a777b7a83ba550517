@@ -1,20 +1,19 @@
 package com.example.demo;
 
-import static org.mockito.Mockito.when;
 
+import static org.mockito.Mockito.when;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
-import java.time.LocalDateTime;
-import java.time.format.*;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,15 +23,31 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.demo.controllers.AppointmentController;
-import com.example.demo.repositories.*;
-import com.example.demo.entities.*;
+import com.example.demo.entities.Appointment;
+import com.example.demo.entities.Doctor;
+import com.example.demo.entities.Patient;
+import com.example.demo.entities.Room;
+import com.example.demo.repositories.AppointmentRepository;
+import com.example.demo.repositories.DoctorRepository;
+import com.example.demo.repositories.PatientRepository;
+import com.example.demo.repositories.RoomRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 @WebMvcTest(AppointmentController.class)
 class AppointmentControllerUnitTest {
 
     @MockBean
     private AppointmentRepository appointmentRepository;
+
+    @MockBean
+    private DoctorRepository doctorRepository;
+
+    @MockBean
+    private PatientRepository patientRepository;
+
+    @MockBean
+    private RoomRepository roomRepository;
 
     @Autowired
     private MockMvc mockMvc;

@@ -29,6 +29,15 @@ public class AppointmentController {
     @Autowired
     AppointmentRepository appointmentRepository;
 
+    @Autowired
+    DoctorRepository doctorRepository;
+
+    @Autowired
+    PatientRepository patientRepository;
+
+    @Autowired
+    RoomRepository roomRepository;
+
     @GetMapping("/appointments")
     public ResponseEntity<List<Appointment>> getAllAppointments(){
         List<Appointment> appointments = new ArrayList<>();
@@ -54,20 +63,21 @@ public class AppointmentController {
     }
 
     @PostMapping("/appointment")
-    public ResponseEntity<List<Appointment>> createAppointment(@RequestBody Appointment appointment) {
-        Doctor doc = appointment.getDoctor();
-        Patient pat = appointment.getPatient();
-        Room room = appointment.getRoom();
+    public ResponseEntity<Appointment> createAppointment(@RequestBody Appointment appointment) {
         
-        LocalDateTime startsAt = appointment.getStartsAt();
-        LocalDateTime finishesAt = appointment.getFinishesAt();
-    
         if (appointment == null || appointment.getDoctor() == null || 
             appointment.getPatient() == null || appointment.getRoom() == null || 
             appointment.getStartsAt() == null || appointment.getFinishesAt() == null
         ) {
             return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
         }
+        
+        Doctor doc = doctorRepository.getReferenceById(appointment.getDoctor().getId());
+        Patient pat = patientRepository.getReferenceById(appointment.getPatient().getId());
+        Room room = roomRepository.getReferenceById(appointment.getRoom().getRoomName());
+        
+        LocalDateTime startsAt = appointment.getStartsAt();
+        LocalDateTime finishesAt = appointment.getFinishesAt();
         
         if (startsAt.compareTo(finishesAt) >= 0) {
             return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
@@ -82,9 +92,9 @@ public class AppointmentController {
         Appointment tmp = new Appointment(pat, doc, room, startsAt, finishesAt);
         
         appointmentRepository.save(tmp);
-        List<Appointment> appointments = Collections.singletonList(tmp);
+        //List<Appointment> appointments = Collections.singletonList(tmp);
 
-        return new ResponseEntity<>(appointments, HttpStatus.CREATED);
+        return new ResponseEntity<>(tmp, HttpStatus.CREATED);
     }
 
     @DeleteMapping("/appointments/{id}")

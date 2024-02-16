@@ -1,6 +1,8 @@
 package com.example.demo.entities;
 
-import javax.persistence.MappedSuperclass;
+import java.io.Serializable;
+
+import jakarta.persistence.MappedSuperclass;
 
 @MappedSuperclass
 public class Person {

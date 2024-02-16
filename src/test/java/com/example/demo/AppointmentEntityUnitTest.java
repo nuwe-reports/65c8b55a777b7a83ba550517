@@ -22,7 +22,7 @@ import com.example.demo.entities.Room;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace=Replace.NONE)
-@TestInstance(Lifecycle.PER_CLASS)
+@TestInstance(Lifecycle.PER_METHOD)
 class AppointmentEntityUnitTest {
    @Test
     void testConstructor() {

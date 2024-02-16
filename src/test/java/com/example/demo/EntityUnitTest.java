@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDateTime;
@@ -95,6 +96,14 @@ class EntityUnitTest {
 		assertNotNull(foundRoom);
 		assertEquals(r1, foundRoom);
 	}
+
+    @Test
+    void testSaveAndRetrieveRoom() {
+        entityManager.persistAndFlush(r1);
+        Room foundRoom = entityManager.find(Room.class, r1.getRoomName());
+        assertNotNull(foundRoom);
+        assertEquals(r1, foundRoom);
+    }
 
     @Test
 	void testDoctorEntity() {
