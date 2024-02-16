@@ -40,7 +40,7 @@ To run this project locally, follow these steps:
 
 ### Entity Relation Diagram
 
-`![Entity Relation Diagram](ERD.jpeg)`
+![Entity Relation Diagram](https://github.com/nuwe-reports/65c8b55a777b7a83ba550517/assets/5830312/da9ea1c5-c96d-4503-90e8-9fb0b37dba64)
 
 ### Endpoints
 
