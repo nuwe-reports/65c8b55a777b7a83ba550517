@@ -4,15 +4,12 @@ import com.example.demo.repositories.*;
 import com.example.demo.entities.*;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,17 +23,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 public class AppointmentController {
 
-    @Autowired
-    AppointmentRepository appointmentRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final DoctorRepository doctorRepository;
+    private final PatientRepository patientRepository;
+    private final RoomRepository roomRepository;
 
-    @Autowired
-    DoctorRepository doctorRepository;
-
-    @Autowired
-    PatientRepository patientRepository;
-
-    @Autowired
-    RoomRepository roomRepository;
+    // Constructor with all repositories for constructor injection
+    public AppointmentController(AppointmentRepository appointmentRepository,
+                                 DoctorRepository doctorRepository,
+                                 PatientRepository patientRepository,
+                                 RoomRepository roomRepository) {
+        this.appointmentRepository = appointmentRepository;
+        this.doctorRepository = doctorRepository;
+        this.patientRepository = patientRepository;
+        this.roomRepository = roomRepository;
+    }
 
     @GetMapping("/appointments")
     public ResponseEntity<List<Appointment>> getAllAppointments(){
@@ -65,7 +66,7 @@ public class AppointmentController {
     @PostMapping("/appointment")
     public ResponseEntity<Appointment> createAppointment(@RequestBody Appointment appointment) {
         
-        if (appointment == null || appointment.getDoctor() == null || 
+        if (appointment.getDoctor() == null || 
             appointment.getPatient() == null || appointment.getRoom() == null || 
             appointment.getStartsAt() == null || appointment.getFinishesAt() == null
         ) {
@@ -92,7 +93,6 @@ public class AppointmentController {
         Appointment tmp = new Appointment(pat, doc, room, startsAt, finishesAt);
         
         appointmentRepository.save(tmp);
-        //List<Appointment> appointments = Collections.singletonList(tmp);
 
         return new ResponseEntity<>(tmp, HttpStatus.CREATED);
     }

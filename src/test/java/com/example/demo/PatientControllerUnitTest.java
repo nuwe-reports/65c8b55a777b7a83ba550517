@@ -7,7 +7,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+
+import static org.hamcrest.Matchers.*;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +40,33 @@ class PatientControllerUnitTest{
         mockMvc.perform(get("/api/patients"))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    void testGetAllPatients_ReturnsPatientsWhenNotEmpty() throws Exception {
+        // Create some sample patients
+        Patient patient1 = new Patient("John", "Doe", 30, "john@example.com");
+        Patient patient2 = new Patient("Alice", "Smith", 25, "alice@example.com");
+        List<Patient> patients = Arrays.asList(patient1, patient2);
+
+        // Mock the patient repository to return the sample patients
+        when(patientRepository.findAll()).thenReturn(patients);
+
+        // Perform the GET request to retrieve all patients
+        mockMvc.perform(get("/api/patients"))
+                .andExpect(status().isOk()) // Expect HTTP 200 OK
+                .andExpect(jsonPath("$", hasSize(2))) // Expecting 2 patients in the response
+                .andExpect(jsonPath("$[0].firstName").value(patient1.getFirstName()))
+                .andExpect(jsonPath("$[0].lastName").value(patient1.getLastName()))
+                .andExpect(jsonPath("$[0].age").value((patient1.getAge())))
+                .andExpect(jsonPath("$[0].email").value(patient1.getEmail()))
+                
+                .andExpect(jsonPath("$[1].firstName").value(patient2.getFirstName()))
+                .andExpect(jsonPath("$[1].lastName").value(patient2.getLastName()))
+                .andExpect(jsonPath("$[1].age").value((patient2.getAge())))
+                .andExpect(jsonPath("$[1].email").value(patient2.getEmail()));
+                
+    }
+
 
     @Test
     void testGetPatientById_ReturnsPatientWhenExists() throws Exception {

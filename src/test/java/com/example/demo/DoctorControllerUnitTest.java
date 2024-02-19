@@ -1,5 +1,6 @@
 package com.example.demo;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -7,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -18,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.demo.controllers.DoctorController;
 import com.example.demo.entities.Doctor;
+import com.example.demo.entities.Patient;
 import com.example.demo.repositories.DoctorRepository;
 
 @WebMvcTest(DoctorController.class)
@@ -35,6 +39,32 @@ class DoctorControllerUnitTest{
 
         mockMvc.perform(get("/api/doctors"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void testGetAllDoctors_ReturnsPatientsWhenNotEmpty() throws Exception {
+        // Create some sample patients
+        Doctor doctor1 = new Doctor("John", "Doe", 30, "john@example.com");
+        Doctor doctor2 = new Doctor("Alice", "Smith", 25, "alice@example.com");
+        List<Doctor> doctors = Arrays.asList(doctor1, doctor2);
+
+        // Mock the patient repository to return the sample patients
+        when(doctorRepository.findAll()).thenReturn(doctors);
+
+        // Perform the GET request to retrieve all patients
+        mockMvc.perform(get("/api/doctors"))
+                .andExpect(status().isOk()) // Expect HTTP 200 OK
+                .andExpect(jsonPath("$", hasSize(2))) // Expecting 2 patients in the response
+                .andExpect(jsonPath("$[0].firstName").value(doctor1.getFirstName()))
+                .andExpect(jsonPath("$[0].lastName").value(doctor1.getLastName()))
+                .andExpect(jsonPath("$[0].age").value((doctor1.getAge())))
+                .andExpect(jsonPath("$[0].email").value(doctor1.getEmail()))
+                
+                .andExpect(jsonPath("$[1].firstName").value(doctor2.getFirstName()))
+                .andExpect(jsonPath("$[1].lastName").value(doctor2.getLastName()))
+                .andExpect(jsonPath("$[1].age").value((doctor2.getAge())))
+                .andExpect(jsonPath("$[1].email").value(doctor2.getEmail()));
+                
     }
 
     @Test

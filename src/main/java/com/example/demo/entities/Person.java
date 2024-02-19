@@ -1,7 +1,5 @@
 package com.example.demo.entities;
 
-import java.io.Serializable;
-
 import jakarta.persistence.MappedSuperclass;
 
 @MappedSuperclass

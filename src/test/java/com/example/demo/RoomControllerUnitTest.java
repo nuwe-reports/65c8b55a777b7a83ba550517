@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,31 @@ class RoomControllerUnitTest {
     private RoomRepository roomRepository;
 
     @Test
-    void testGetAllRooms_ReturnsNoContentWhenEmpty() throws Exception {
+    void testGetAllRooms_ReturnsRoomsWhenNonEmpty() throws Exception {
+        // Create some sample rooms
+        List<Room> rooms = new ArrayList<>();
+        rooms.add(new Room("Room 1"));
+        rooms.add(new Room("Room 2"));
+        rooms.add(new Room("Room 3"));
+
+        // Mock the roomRepository to return the sample rooms
+        when(roomRepository.findAll()).thenReturn(rooms);
+
+        // Perform the GET request to retrieve all rooms
+        mockMvc.perform(get("/api/rooms")
+                .contentType(MediaType.APPLICATION_JSON))
+                // Expect status OK because rooms exist
+                .andExpect(status().isOk())
+                // Optionally, you can also validate the response body to ensure correct rooms are returned
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].roomName").value("Room 1"))
+                .andExpect(jsonPath("$[1].roomName").value("Room 2"))
+                .andExpect(jsonPath("$[2].roomName").value("Room 3"));
+    }
+
+
+    @Test
+    void testGetAllRooms_ReturnsNoContentWhenNonEmpty() throws Exception {
         when(roomRepository.findAll()).thenReturn(new ArrayList<>());
 
         mockMvc.perform(get("/api/rooms")

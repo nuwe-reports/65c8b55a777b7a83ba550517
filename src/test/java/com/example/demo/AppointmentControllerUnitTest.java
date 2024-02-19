@@ -1,6 +1,7 @@
 package com.example.demo;
 
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -76,6 +77,114 @@ class AppointmentControllerUnitTest {
     }
 
     @Test
+    void testShouldNotCreateAppointment_WithEmptyPatient() throws Exception {
+        Doctor doctor = new Doctor("Perla", "Amalia", 24, "p.amalia@hospital.accwe");
+        Room room = new Room("Dermatology");
+
+        when(doctorRepository.findById(any())).thenReturn(Optional.of(doctor));
+        when(roomRepository.findById(any())).thenReturn(Optional.of(room));
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+        LocalDateTime startsAt = LocalDateTime.parse("19:30 24/04/2023", formatter);
+        LocalDateTime finishesAt = LocalDateTime.parse("20:30 24/04/2023", formatter);
+
+        Appointment appointment = new Appointment(null, doctor, room, startsAt, finishesAt);
+
+        mockMvc.perform(post("/api/appointment")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(appointment)))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void testShouldNotCreateAppointment_WithEmptyDoctor() throws Exception {
+        Patient patient = new Patient("Jose Luis", "Olaya", 37, "j.olaya@email.com");
+        Room room = new Room("Dermatology");
+
+        when(patientRepository.findById(any())).thenReturn(Optional.of(patient));
+        when(roomRepository.findById(any())).thenReturn(Optional.of(room));
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+        LocalDateTime startsAt = LocalDateTime.parse("19:30 24/04/2023", formatter);
+        LocalDateTime finishesAt = LocalDateTime.parse("20:30 24/04/2023", formatter);
+
+        Appointment appointment = new Appointment(patient, null, room, startsAt, finishesAt);
+
+        mockMvc.perform(post("/api/appointment")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(appointment)))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void testShouldNotCreateAppointment_WithEmptyRoom() throws Exception {
+        Patient patient = new Patient("Jose Luis", "Olaya", 37, "j.olaya@email.com");
+        Doctor doctor = new Doctor("Perla", "Amalia", 24, "p.amalia@hospital.accwe");
+
+        when(patientRepository.findById(any())).thenReturn(Optional.of(patient));
+        when(doctorRepository.findById(any())).thenReturn(Optional.of(doctor));
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+        LocalDateTime startsAt = LocalDateTime.parse("19:30 24/04/2023", formatter);
+        LocalDateTime finishesAt = LocalDateTime.parse("20:30 24/04/2023", formatter);
+
+        Appointment appointment = new Appointment(patient, doctor, null, startsAt, finishesAt);
+
+        mockMvc.perform(post("/api/appointment")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(appointment)))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void testShouldNotCreateAppointment_WithNullAppointment() throws Exception {
+        mockMvc.perform(post("/api/appointment")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(null)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testShouldNotCreateAppointment_WithNullStartsAt() throws Exception {
+        Patient patient = new Patient("Jose Luis", "Olaya", 37, "j.olaya@email.com");
+        Doctor doctor = new Doctor("Perla", "Amalia", 24, "p.amalia@hospital.accwe");
+        Room room = new Room("Dermatology");
+
+        when(patientRepository.findById(any())).thenReturn(Optional.of(patient));
+        when(doctorRepository.findById(any())).thenReturn(Optional.of(doctor));
+        when(roomRepository.findById(any())).thenReturn(Optional.of(room));
+
+        // Set startsAt as null
+        Appointment appointment = new Appointment(patient, doctor, room, null,
+                LocalDateTime.parse("20:30 24/04/2023", DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy")));
+
+        mockMvc.perform(post("/api/appointment")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(appointment)))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void testShouldNotCreateAppointment_WithNullFinishesAt() throws Exception {
+        Patient patient = new Patient("Jose Luis", "Olaya", 37, "j.olaya@email.com");
+        Doctor doctor = new Doctor("Perla", "Amalia", 24, "p.amalia@hospital.accwe");
+        Room room = new Room("Dermatology");
+
+        when(patientRepository.findById(any())).thenReturn(Optional.of(patient));
+        when(doctorRepository.findById(any())).thenReturn(Optional.of(doctor));
+        when(roomRepository.findById(any())).thenReturn(Optional.of(room));
+
+        // Set finishesAt as null
+        Appointment appointment = new Appointment(patient, doctor, room,
+                LocalDateTime.parse("19:30 24/04/2023", DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy")), null);
+
+        mockMvc.perform(post("/api/appointment")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(appointment)))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
     void testShouldNotCreateAppointment() throws Exception {
 
         Patient patient = new Patient("Jose Luis", "Olaya", 37, "j.olaya@email.com");
@@ -96,7 +205,7 @@ class AppointmentControllerUnitTest {
     }
 
     @Test
-    void testShouldCreateOneAppointmentOutOfTwoConflictDate() throws Exception {
+    void testShouldCreateOneAppointmentOutOfTwoConflictDateAndRoom() throws Exception {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
@@ -112,6 +221,81 @@ class AppointmentControllerUnitTest {
         Patient patient2 = new Patient("Paulino", "Antunez", 37, "p.antunez@email.com");
         Doctor doctor2 = new Doctor("Miren", "Iniesta", 24, "m.iniesta@hospital.accwe");
         Appointment appointment2 = new Appointment(patient2, doctor2, room, startsAt, finishesAt);
+
+        // Perform the first POST request to create the first appointment
+        when(appointmentRepository.findAll())
+            .thenReturn(Collections.emptyList())
+            .thenReturn(Collections.singletonList(appointment1))
+            .thenReturn(Arrays.asList(appointment1, appointment2));
+
+        // Perform the first POST request to create the first appointment
+        mockMvc.perform(post("/api/appointment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(appointment1)))
+            .andExpect(status().isCreated());
+
+        // Perform the second POST request to create the second appointment
+        mockMvc.perform(post("/api/appointment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(appointment2)))
+            .andExpect(status().isConflict());
+
+    }
+
+    @Test
+    void testShouldCreateOneAppointmentOutOfTwoConflictDateAndDoctor() throws Exception {
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+
+        LocalDateTime startsAt = LocalDateTime.parse("19:30 24/04/2023", formatter);
+        LocalDateTime finishesAt = LocalDateTime.parse("20:30 24/04/2023", formatter);
+
+        Room room1 = new Room("Room 101");
+        Room room2 = new Room("Room 102");
+
+        Patient patient1 = new Patient("Jhon", "Doe", 37, "j.doe@email.com");
+        Doctor doctor = new Doctor("Jane", "Smith", 24, "p.amalia@hospital.accwe");
+        Appointment appointment1 = new Appointment(patient1, doctor, room1, startsAt, finishesAt);
+
+        Patient patient2 = new Patient("Paulino", "Antunez", 37, "p.antunez@email.com");
+        Appointment appointment2 = new Appointment(patient2, doctor, room2, startsAt, finishesAt);
+
+        // Perform the first POST request to create the first appointment
+        when(appointmentRepository.findAll())
+            .thenReturn(Collections.emptyList())
+            .thenReturn(Collections.singletonList(appointment1))
+            .thenReturn(Arrays.asList(appointment1, appointment2));
+
+        // Perform the first POST request to create the first appointment
+        mockMvc.perform(post("/api/appointment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(appointment1)))
+            .andExpect(status().isCreated());
+
+        // Perform the second POST request to create the second appointment
+        mockMvc.perform(post("/api/appointment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(appointment2)))
+            .andExpect(status().isConflict());
+
+    }
+
+    @Test
+    void testShouldCreateOneAppointmentOutOfTwoConflictDateAndPatient() throws Exception {
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+
+        LocalDateTime startsAt = LocalDateTime.parse("19:30 24/04/2023", formatter);
+        LocalDateTime finishesAt = LocalDateTime.parse("20:30 24/04/2023", formatter);
+        
+        Room room1 = new Room("Room 101");
+        Patient patient = new Patient("Jhon", "Doe", 37, "j.doe@email.com");
+        Doctor doctor1 = new Doctor("Jane", "Smith", 24, "p.amalia@hospital.accwe");
+        Appointment appointment1 = new Appointment(patient, doctor1, room1, startsAt, finishesAt);
+
+        Room room2 = new Room("Room 102");
+        Doctor doctor2 = new Doctor("Miren", "Iniesta", 24, "m.iniesta@hospital.accwe");
+        Appointment appointment2 = new Appointment(patient, doctor2, room2, startsAt, finishesAt);
 
         // Perform the first POST request to create the first appointment
         when(appointmentRepository.findAll())
