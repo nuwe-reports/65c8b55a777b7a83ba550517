@@ -1,0 +1,32 @@
+# Stage 1: Build the application and run tests
+FROM maven:3.8.4-openjdk-17 AS build
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the Maven project files
+COPY pom.xml .
+COPY src src
+
+# Run Maven tests
+RUN mvn test
+
+# Stage 2: Compile the application
+FROM build AS compile
+
+# Build the application
+RUN mvn package -DskipTests
+
+# Stage 3: Create a lightweight image with the compiled application
+FROM openjdk:11-jre-slim
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the compiled JAR file from the previous stage
+COPY --from=compile /app/target/*.jar app.jar
+
+# Expose the port that the application listens on
+EXPOSE 8080
+
+# Command to run the application
+CMD ["java", "-jar", "app.jar"]
