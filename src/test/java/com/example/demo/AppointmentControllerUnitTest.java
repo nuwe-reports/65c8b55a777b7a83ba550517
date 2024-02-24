@@ -37,13 +37,22 @@ class AppointmentControllerUnitTest{
 
     @MockBean
     private AppointmentRepository appointmentRepository;
+    
+    @MockBean
+    private DoctorRepository doctorRepository;
 
-    @Autowired 
+    @MockBean
+    private PatientRepository patientRepository;
+
+    @MockBean
+    private RoomRepository roomRepository;
+
+    @Autowired
     private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
-
+    
     @Test
     void shouldCreateAppointment() throws Exception {
         
