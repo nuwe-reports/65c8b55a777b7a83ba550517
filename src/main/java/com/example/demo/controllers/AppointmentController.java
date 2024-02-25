@@ -52,12 +52,6 @@ public class AppointmentController {
         }
     }
 
-    private boolean isInvalidAppointment(Appointment appointment){
-        return appointment.getDoctor() == null || 
-            appointment.getPatient() == null || appointment.getRoom() == null || 
-            appointment.getStartsAt() == null || appointment.getFinishesAt() == null;
-    }
-
     private boolean isOverlappingAppointment(Appointment appointment) {
         List<Appointment> existingAppointments = appointmentRepository.findAll();
         return existingAppointments.stream()
@@ -70,10 +64,6 @@ public class AppointmentController {
 
     @PostMapping("/appointment")
     public ResponseEntity<Appointment> createAppointment(@RequestBody Appointment appointment) {
-        
-        if (isInvalidAppointment(appointment)) {
-            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
-        }
         
         if (isTimeIntervalValid(appointment)) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
