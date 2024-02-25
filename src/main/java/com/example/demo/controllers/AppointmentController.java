@@ -76,23 +76,14 @@ public class AppointmentController {
             return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
         }
         
-        Doctor doc = appointment.getDoctor();
-        Patient pat = appointment.getPatient();
-
-        Room room = appointment.getRoom();
-        
-        LocalDateTime startsAt = appointment.getStartsAt();
-        LocalDateTime finishesAt = appointment.getFinishesAt();
-        
-        
         if (isTimeIntervalValid(appointment)) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         
         if( isOverlappingAppointment(appointment))
             return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
-    
-        Appointment tmp = new Appointment(pat, doc, room, startsAt, finishesAt);
+
+        Appointment tmp = new Appointment(appointment.getPatient(), appointment.getDoctor(), appointment.getRoom(), appointment.getStartsAt(), appointment.getFinishesAt());
         
         appointmentRepository.save(tmp);
 
