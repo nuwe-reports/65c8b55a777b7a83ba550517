@@ -1,6 +1,8 @@
 package com.example.demo;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -12,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import com.example.demo.controllers.DoctorController;
 import com.example.demo.controllers.PatientController;
@@ -29,6 +33,7 @@ import com.example.demo.entities.Room;
 import com.example.demo.repositories.DoctorRepository;
 import com.example.demo.repositories.PatientRepository;
 import com.example.demo.repositories.RoomRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 
@@ -38,12 +43,21 @@ class EntityControllerUnitTest{
     @WebMvcTest(DoctorController.class)
     class DoctorControllerUnitTest{
     
+        private Doctor d1, d2;
+        /** Doctor Tests */
+        @BeforeEach
+        void setUp() {
+            d1 = new Doctor("John", "Doe", 30, "john.doe@example.com");
+            d2 = new Doctor("Alice", "Smith", 25, "alice@example.com");
+            // Initialize test data before each test method
+        }
+
         @MockBean
         private DoctorRepository doctorRepository;
     
         @Autowired 
         private MockMvc mockMvc;
-    
+        
         @Test
         void testGetAllDoctors_ReturnsNoContentWhenEmpty() throws Exception {
             when(doctorRepository.findAll()).thenReturn(new ArrayList<>());
@@ -53,43 +67,45 @@ class EntityControllerUnitTest{
         }
     
         @Test
-        void testGetAllDoctors_ReturnsPatientsWhenNotEmpty() throws Exception {
-            // Create some sample patients
-            Doctor doctor1 = new Doctor("John", "Doe", 30, "john@example.com");
-            Doctor doctor2 = new Doctor("Alice", "Smith", 25, "alice@example.com");
-            List<Doctor> doctors = Arrays.asList(doctor1, doctor2);
+        void testGetAllDoctors_ReturnsDoctorsWhenNotEmpty() throws Exception {
+            // Create some sample doctors
+            List<Doctor> doctors = Arrays.asList(d1, d2);
     
             // Mock the patient repository to return the sample patients
             when(doctorRepository.findAll()).thenReturn(doctors);
     
-            // Perform the GET request to retrieve all patients
-            mockMvc.perform(get("/api/doctors"))
-                    .andExpect(status().isOk()) // Expect HTTP 200 OK
-                    .andExpect(jsonPath("$", hasSize(2))) // Expecting 2 patients in the response
-                    .andExpect(jsonPath("$[0].firstName").value(doctor1.getFirstName()))
-                    .andExpect(jsonPath("$[0].lastName").value(doctor1.getLastName()))
-                    .andExpect(jsonPath("$[0].age").value((doctor1.getAge())))
-                    .andExpect(jsonPath("$[0].email").value(doctor1.getEmail()))
-                    
-                    .andExpect(jsonPath("$[1].firstName").value(doctor2.getFirstName()))
-                    .andExpect(jsonPath("$[1].lastName").value(doctor2.getLastName()))
-                    .andExpect(jsonPath("$[1].age").value((doctor2.getAge())))
-                    .andExpect(jsonPath("$[1].email").value(doctor2.getEmail()));
-                    
+            MvcResult result = mockMvc.perform(get("/api/doctors"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+            String jsonResponse = result.getResponse().getContentAsString();
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<Doctor> returnedDoctors = objectMapper.readValue(jsonResponse, new TypeReference<List<Doctor>>() {});
+
+            // Verify the returned list has the expected size
+            assertThat(returnedDoctors).hasSize(2);
+
+            for (int i = 0; i < doctors.size(); i++) {
+                Doctor expectedDoctor = doctors.get(i);
+                Doctor returnedDoctor = returnedDoctors.get(i);
+        
+                assertThat(returnedDoctor.getFirstName()).isEqualTo(expectedDoctor.getFirstName());
+                assertThat(returnedDoctor.getLastName()).isEqualTo(expectedDoctor.getLastName());
+                assertThat(returnedDoctor.getAge()).isEqualTo(expectedDoctor.getAge());
+                assertThat(returnedDoctor.getEmail()).isEqualTo(expectedDoctor.getEmail());
+            }
+        
         }
     
         @Test
         void testGetDoctorById_ReturnsDoctorWhenExists() throws Exception {
             long id = 1;
-            Doctor doctor = new Doctor("John", "Doe", 40, "john.doe@example.com");
-            when(doctorRepository.findById(id)).thenReturn(Optional.of(doctor));
+            when(doctorRepository.findById(id)).thenReturn(Optional.of(d1));
     
             mockMvc.perform(get("/api/doctors/{id}", id))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.firstName").value(doctor.getFirstName()))
-                    .andExpect(jsonPath("$.lastName").value(doctor.getLastName()))
-                    .andExpect(jsonPath("$.age").value(doctor.getAge()))
-                    .andExpect(jsonPath("$.email").value(doctor.getEmail()));
+                    .andExpect(content().json(new ObjectMapper().writeValueAsString(d1)));
+
         }
     
         @Test
@@ -103,23 +119,22 @@ class EntityControllerUnitTest{
     
         @Test
         void testCreateDoctor_ReturnsCreatedWithDoctorDetails() throws Exception {
-            Doctor doctor = new Doctor("John", "Doe", 40, "john.doe@example.com");
-            when(doctorRepository.save(any(Doctor.class))).thenReturn(doctor);
-    
+            //Doctor doctor = new Doctor("John", "Doe", 40, "john.doe@example.com");
+            when(doctorRepository.save(any(Doctor.class))).thenReturn(d1);
+
+            String doctorJson = new ObjectMapper().writeValueAsString(d1);
+
             mockMvc.perform(post("/api/doctor")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"firstName\": \"John\", \"lastName\": \"Doe\", \"age\": 40, \"email\": \"john.doe@example.com\"}"))
+                    .content(doctorJson))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.firstName").value(doctor.getFirstName()))
-                    .andExpect(jsonPath("$.lastName").value(doctor.getLastName()))
-                    .andExpect(jsonPath("$.age").value(doctor.getAge()))
-                    .andExpect(jsonPath("$.email").value(doctor.getEmail()));
+                    .andExpect(content().json(doctorJson)); // Verify response content matches the serialized Doctor object
         }
     
         @Test
         void testDeleteDoctor_ReturnsOkWhenExists() throws Exception {
             long id = 1;
-            when(doctorRepository.findById(id)).thenReturn(Optional.of(new Doctor("John", "Doe", 40, "john.doe@example.com")));
+            when(doctorRepository.findById(id)).thenReturn(Optional.of(d1));
     
             mockMvc.perform(delete("/api/doctors/{id}", id))
                     .andExpect(status().isOk());
@@ -151,6 +166,15 @@ class EntityControllerUnitTest{
         @Autowired 
         private MockMvc mockMvc;
 
+        private Patient p1, p2;
+        /** Doctor Tests */
+        @BeforeEach
+        void setUp() {
+            p1 = new Patient("John", "Doe", 30, "john.doe@example.com");
+            p2 = new Patient("Alice", "Smith", 25, "alice@example.com");
+            // Initialize test data before each test method
+        }
+
         @Test
         void testGetAllPatients_ReturnsNoContentWhenEmpty() throws Exception {
             when(patientRepository.findAll()).thenReturn(new ArrayList<>());
@@ -162,26 +186,31 @@ class EntityControllerUnitTest{
         @Test
         void testGetAllPatients_ReturnsPatientsWhenNotEmpty() throws Exception {
             // Create some sample patients
-            Patient patient1 = new Patient("John", "Doe", 30, "john@example.com");
-            Patient patient2 = new Patient("Alice", "Smith", 25, "alice@example.com");
-            List<Patient> patients = Arrays.asList(patient1, patient2);
+            List<Patient> patients = Arrays.asList(p1, p2);
 
             // Mock the patient repository to return the sample patients
             when(patientRepository.findAll()).thenReturn(patients);
 
-            // Perform the GET request to retrieve all patients
-            mockMvc.perform(get("/api/patients"))
-                    .andExpect(status().isOk()) // Expect HTTP 200 OK
-                    .andExpect(jsonPath("$", hasSize(2))) // Expecting 2 patients in the response
-                    .andExpect(jsonPath("$[0].firstName").value(patient1.getFirstName()))
-                    .andExpect(jsonPath("$[0].lastName").value(patient1.getLastName()))
-                    .andExpect(jsonPath("$[0].age").value((patient1.getAge())))
-                    .andExpect(jsonPath("$[0].email").value(patient1.getEmail()))
-                    
-                    .andExpect(jsonPath("$[1].firstName").value(patient2.getFirstName()))
-                    .andExpect(jsonPath("$[1].lastName").value(patient2.getLastName()))
-                    .andExpect(jsonPath("$[1].age").value((patient2.getAge())))
-                    .andExpect(jsonPath("$[1].email").value(patient2.getEmail()));
+            MvcResult result = mockMvc.perform(get("/api/patients"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+            String jsonResponse = result.getResponse().getContentAsString();
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<Patient> returnedPatients = objectMapper.readValue(jsonResponse, new TypeReference<List<Patient>>() {});
+
+            // Verify the returned list has the expected size
+            assertThat(returnedPatients).hasSize(2);
+
+            for (int i = 0; i < patients.size(); i++) {
+                Patient expectedPatient = patients.get(i);
+                Patient returnedPatient = returnedPatients.get(i);
+        
+                assertThat(returnedPatient.getFirstName()).isEqualTo(expectedPatient.getFirstName());
+                assertThat(returnedPatient.getLastName()).isEqualTo(expectedPatient.getLastName());
+                assertThat(returnedPatient.getAge()).isEqualTo(expectedPatient.getAge());
+                assertThat(returnedPatient.getEmail()).isEqualTo(expectedPatient.getEmail());
+            }
                     
         }
 
@@ -189,15 +218,15 @@ class EntityControllerUnitTest{
         @Test
         void testGetPatientById_ReturnsPatientWhenExists() throws Exception {
             long id = 1;
-            Patient patient = new Patient("John", "Doe", 30, "john@example.com");
-            when(patientRepository.findById(id)).thenReturn(Optional.of(patient));
+            
+            when(patientRepository.findById(id)).thenReturn(Optional.of(p1));
+
+            String patientJson = new ObjectMapper().writeValueAsString(p1);
 
             mockMvc.perform(get("/api/patients/{id}", id))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.firstName").value(patient.getFirstName()))
-                    .andExpect(jsonPath("$.lastName").value(patient.getLastName()))
-                    .andExpect(jsonPath("$.age").value(patient.getAge()))
-                    .andExpect(jsonPath("$.email").value(patient.getEmail()));
+                    .andExpect(content().json(patientJson)); // Verify response content matches the serialized Doctor object
+
         }
 
         @Test
@@ -214,20 +243,20 @@ class EntityControllerUnitTest{
             Patient patient = new Patient("John", "Doe", 30, "john@example.com");
             when(patientRepository.save(any(Patient.class))).thenReturn(patient);
 
+            String patientJson = new ObjectMapper().writeValueAsString(p1);
+
             mockMvc.perform(post("/api/patient")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"firstName\": \"John\", \"lastName\": \"Doe\", \"age\": 30, \"email\": \"john@example.com\"}"))
+                    .content(patientJson))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.firstName").value(patient.getFirstName()))
-                    .andExpect(jsonPath("$.lastName").value(patient.getLastName()))
-                    .andExpect(jsonPath("$.age").value(patient.getAge()))
-                    .andExpect(jsonPath("$.email").value(patient.getEmail()));
+                    .andExpect(content().json(patientJson));
+           
         }
 
         @Test
         void testDeletePatient_ReturnsOkWhenExists() throws Exception {
             long id = 1;
-            when(patientRepository.findById(id)).thenReturn(Optional.of(new Patient("John", "Doe", 30, "john@example.com")));
+            when(patientRepository.findById(id)).thenReturn(Optional.of(p1));
 
             mockMvc.perform(delete("/api/patients/{id}", id))
                     .andExpect(status().isOk());
@@ -259,27 +288,41 @@ class EntityControllerUnitTest{
         @MockBean
         private RoomRepository roomRepository;
 
+        private Room r1, r2, r3;
+        /** Room Tests */
+        @BeforeEach
+        void setUp() {
+            // Initialize test data before each test method
+            r1 = new Room("Room 1");
+            r2 = new Room("Room 2");
+            r3 = new Room("Room 3");
+        }
+
         @Test
         void testGetAllRooms_ReturnsRoomsWhenNonEmpty() throws Exception {
             // Create some sample rooms
-            List<Room> rooms = new ArrayList<>();
-            rooms.add(new Room("Room 1"));
-            rooms.add(new Room("Room 2"));
-            rooms.add(new Room("Room 3"));
-
+            List<Room> rooms = Arrays.asList(r1, r2, r3);;
             // Mock the roomRepository to return the sample rooms
             when(roomRepository.findAll()).thenReturn(rooms);
 
-            // Perform the GET request to retrieve all rooms
-            mockMvc.perform(get("/api/rooms")
-                    .contentType(MediaType.APPLICATION_JSON))
-                    // Expect status OK because rooms exist
-                    .andExpect(status().isOk())
-                    // Optionally, you can also validate the response body to ensure correct rooms are returned
-                    .andExpect(jsonPath("$.length()").value(3))
-                    .andExpect(jsonPath("$[0].roomName").value("Room 1"))
-                    .andExpect(jsonPath("$[1].roomName").value("Room 2"))
-                    .andExpect(jsonPath("$[2].roomName").value("Room 3"));
+            MvcResult result = mockMvc.perform(get("/api/rooms"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+            String jsonResponse = result.getResponse().getContentAsString();
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<Room> returnedRooms = objectMapper.readValue(jsonResponse, new TypeReference<List<Room>>() {});
+
+            // Verify the returned list has the expected size
+            assertThat(returnedRooms).hasSize(3);
+
+            for (int i = 0; i < rooms.size(); i++) {
+                Room expectedRoom = rooms.get(i);
+                Room returnedRoom = returnedRooms.get(i);
+        
+                assertThat(returnedRoom.getRoomName()).isEqualTo(expectedRoom.getRoomName());
+            }
+
         }
 
 
@@ -294,19 +337,20 @@ class EntityControllerUnitTest{
 
         @Test
         void testGetRoomByRoomName_ReturnsRoomWhenExists() throws Exception {
-            String roomName = "Room 101";
-            Room room = new Room(roomName);
-            when(roomRepository.findByRoomName(roomName)).thenReturn(java.util.Optional.of(room));
+            String roomName = r1.getRoomName();
+            when(roomRepository.findByRoomName(roomName)).thenReturn(java.util.Optional.of(r1));
+
+            String roomJson = new ObjectMapper().writeValueAsString(r1);
 
             mockMvc.perform(get("/api/rooms/{roomName}", roomName)
                     .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.roomName").value(roomName));
+                    .andExpect(content().json(roomJson));
         }
 
         @Test
         void testGetRoomByRoomName_ReturnsNotFoundWhenNotExists() throws Exception {
-            String roomName = "Room 101";
+            String roomName = r1.getRoomName();
             when(roomRepository.findByRoomName(roomName)).thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(get("/api/rooms/{roomName}", roomName)
@@ -316,25 +360,24 @@ class EntityControllerUnitTest{
 
         @Test
         void testCreateRoom_ReturnsCreatedWithRoomDetails() throws Exception {
-            String roomName = "New Room";
-            Room room = new Room(roomName);
-            when(roomRepository.save(any(Room.class))).thenReturn(room);
+            
+            when(roomRepository.save(any(Room.class))).thenReturn(r1);
 
             ObjectMapper objectMapper = new ObjectMapper();
-            String json = objectMapper.writeValueAsString(room);
+            String roomJson = objectMapper.writeValueAsString(r1);
 
             mockMvc.perform(post("/api/room")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(json))
+                    .content(roomJson))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.roomName").value(roomName));
+                    .andExpect(content().json(roomJson));
+                    
         }
 
         @Test
         void testDeleteRoom_ReturnsOkWhenExists() throws Exception {
-            String roomName = "Room 101";
-            Room room = new Room(roomName);
-            when(roomRepository.findByRoomName(roomName)).thenReturn(java.util.Optional.of(room));
+            String roomName = r1.getRoomName();
+            when(roomRepository.findByRoomName(roomName)).thenReturn(java.util.Optional.of(r1));
 
             mockMvc.perform(delete("/api/rooms/{roomName}", roomName)
                     .contentType(MediaType.APPLICATION_JSON))

@@ -25,12 +25,10 @@ class EntityUnitTest {
 	@Autowired
 	private TestEntityManager entityManager;
 
-    /** Rom Tests */
+    /** Room Tests */
     @BeforeEach
 	void setUp() {
 		// Initialize test data before each test method
-		
-
 	}
     
 
