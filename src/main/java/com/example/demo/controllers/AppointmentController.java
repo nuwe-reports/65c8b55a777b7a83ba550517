@@ -24,17 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class AppointmentController {
 
     private final AppointmentRepository appointmentRepository;
-    private final DoctorRepository doctorRepository;
-    private final PatientRepository patientRepository;
-    
     // Constructor with all repositories for constructor injection
-    public AppointmentController(AppointmentRepository appointmentRepository,
-                                 DoctorRepository doctorRepository,
-                                 PatientRepository patientRepository) {
+    public AppointmentController(AppointmentRepository appointmentRepository) {
         this.appointmentRepository = appointmentRepository;
-        this.doctorRepository = doctorRepository;
-        this.patientRepository = patientRepository;
-
     }
 
     @GetMapping("/appointments")
@@ -71,8 +63,8 @@ public class AppointmentController {
             return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
         }
         
-        Doctor doc = doctorRepository.getReferenceById(appointment.getDoctor().getId());
-        Patient pat = patientRepository.getReferenceById(appointment.getPatient().getId());
+        Doctor doc = appointment.getDoctor();
+        Patient pat = appointment.getPatient();
 
         Room room = appointment.getRoom();
         
