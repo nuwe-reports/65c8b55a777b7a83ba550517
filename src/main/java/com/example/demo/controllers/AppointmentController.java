@@ -53,13 +53,26 @@ public class AppointmentController {
         }
     }
 
+    private boolean isInvalidAppointment(Appointment appointment){
+        return appointment.getDoctor() == null || 
+            appointment.getPatient() == null || appointment.getRoom() == null || 
+            appointment.getStartsAt() == null || appointment.getFinishesAt() == null;
+    }
+
+    private boolean isOverlappingAppointment(Appointment appointment) {
+        List<Appointment> existingAppointments = appointmentRepository.findAll();
+        return existingAppointments.stream()
+                .anyMatch(existing -> existing.overlaps(appointment));
+    }
+
+    private boolean isTimeIntervalValid(Appointment appointment) {
+        return appointment.getStartsAt().compareTo(appointment.getFinishesAt()) >= 0;
+    }
+
     @PostMapping("/appointment")
     public ResponseEntity<Appointment> createAppointment(@RequestBody Appointment appointment) {
         
-        if (appointment.getDoctor() == null || 
-            appointment.getPatient() == null || appointment.getRoom() == null || 
-            appointment.getStartsAt() == null || appointment.getFinishesAt() == null
-        ) {
+        if (isInvalidAppointment(appointment)) {
             return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
         }
         
@@ -71,15 +84,13 @@ public class AppointmentController {
         LocalDateTime startsAt = appointment.getStartsAt();
         LocalDateTime finishesAt = appointment.getFinishesAt();
         
-        if (startsAt.compareTo(finishesAt) >= 0) {
+        
+        if (isTimeIntervalValid(appointment)) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-
-        List<Appointment> allAppointments = appointmentRepository.findAll();
-        for (Appointment existingAppointment : allAppointments) {
-            if( existingAppointment.overlaps(appointment))
-                return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
-        }
+        
+        if( isOverlappingAppointment(appointment))
+            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
     
         Appointment tmp = new Appointment(pat, doc, room, startsAt, finishesAt);
         
