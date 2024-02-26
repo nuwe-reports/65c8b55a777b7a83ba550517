@@ -58,17 +58,16 @@ public class AppointmentController {
                 .anyMatch(existing -> existing.overlaps(appointment));
     }
 
-    private boolean isTimeIntervalInvalid(Appointment appointment) {
-        return appointment.getFinishesAt().isBefore(appointment.getStartsAt()) ||
-                appointment.getFinishesAt().isEqual(appointment.getStartsAt());
+    private boolean isTimeIntervalValid(Appointment appointment) {
+        return appointment.getStartsAt().isBefore(appointment.getFinishesAt());
     }
 
     @PostMapping("/appointment")
     public ResponseEntity<Appointment> createAppointment(@RequestBody Appointment appointment) {
         
-        if (isTimeIntervalInvalid(appointment)) {
+        if (!isTimeIntervalValid(appointment)) 
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+        
         
         if( isOverlappingAppointment(appointment))
             return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
